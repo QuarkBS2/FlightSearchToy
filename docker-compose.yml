@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  frontend:
+    build: ./flightsearch-frontend
+    container_name: flightsearch_frontend
+    ports:
+      - '3000:3000'
+  backend:
+    build: ./flightsearch-backend
+    container_name: flightsearch_backend
+    ports:
+      - '8080:8080'
+    stdin_open: true
+    tty: true
+    command: ["java", "-jar", "/app/app.jar"]
