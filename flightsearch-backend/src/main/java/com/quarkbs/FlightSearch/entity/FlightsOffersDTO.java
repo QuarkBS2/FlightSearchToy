@@ -12,15 +12,18 @@ public class FlightsOffersDTO {
     private List<Itineraries> itineraries;
     private Price price;
     private List<TravelerPricings> travelerPricings;
+    private Dictionaries dictionaries;
 
     @JsonCreator
     public FlightsOffersDTO(@JsonProperty("id") String id, @JsonProperty("itineraries") List<Itineraries> itineraries,
             @JsonProperty("price") Price price,
-            @JsonProperty("travelerPricings") List<TravelerPricings> travelerPricings) {
+            @JsonProperty("travelerPricings") List<TravelerPricings> travelerPricings,
+            @JsonProperty("dictionaries") Dictionaries dictionaries) {
         this.id = id;
         this.itineraries = itineraries;
         this.price = price;
         this.travelerPricings = travelerPricings;
+        this.dictionaries = dictionaries;
 
     }
 
@@ -54,6 +57,18 @@ public class FlightsOffersDTO {
 
     public void setTravelerPricings(List<TravelerPricings> travelerPricings) {
         this.travelerPricings = travelerPricings;
+    }
+
+    public Float getTotalPrice() {
+        return Float.valueOf(price.getTotal());
+    }
+
+    public Dictionaries getDictionaries() {
+        return dictionaries;
+    }
+
+    public void setDictionaries(Dictionaries dictionaries) {
+        this.dictionaries = dictionaries;
     }
 
 }

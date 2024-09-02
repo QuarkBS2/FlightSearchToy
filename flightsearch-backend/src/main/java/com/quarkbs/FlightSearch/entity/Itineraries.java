@@ -1,5 +1,6 @@
 package com.quarkbs.FlightSearch.entity;
 
+import java.time.Duration;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -31,6 +32,10 @@ public class Itineraries {
 
     public void setSegments(List<Segments> segments) {
         this.segments = segments;
+    }
+
+    public Duration getDurationAsObject() {
+        return Duration.parse(duration);
     }
 
 }

@@ -39,9 +39,16 @@ public class AmadeusController {
             @RequestParam(required = false) String returnDate,
             @RequestParam int numberAdults,
             @RequestParam String currency,
-            @RequestParam Boolean hasStops) {
+            @RequestParam Boolean hasStops,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false, defaultValue = "asc") String orderBy) {
         List<FlightsOffersDTO> response = amadeusService.getFlights(departureAirportCode, arrivalAirportCode,
                 departureDate, returnDate, numberAdults, currency, hasStops);
+        if (sortBy != null && !sortBy.equals("undefined")) {
+            response = amadeusService.sortFlights(response, sortBy, orderBy);
+        }
+        response = amadeusService.pagination(response);
+
         return ResponseEntity.ok(response);
     }
 

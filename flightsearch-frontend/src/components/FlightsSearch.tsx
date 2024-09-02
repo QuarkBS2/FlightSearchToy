@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Form, Select, DatePicker, InputNumber, Checkbox, Button } from 'antd';
+import { notification, Card, Form, Select, DatePicker, InputNumber, Checkbox, Button } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import { Dayjs } from 'dayjs';
 import axios from 'axios';
 import dayjs from 'dayjs';
 
+type NotificationType = 'success' | 'info' | 'warning' | 'error';
 const { Option } = Select;
 
 interface AirportOption {
@@ -16,11 +17,10 @@ interface AirportOption {
 const FlightSearch: React.FC = () => {
     const [options1, setOptions1] = useState<AirportOption[]>([]);
     const [options2, setOptions2] = useState<AirportOption[]>([]);
-
+    const [api, contextHolder] = notification.useNotification();
     const [startDate, setStartDate] = useState<Dayjs | null>(null);
     const [arrivalDate, setArrivalDate] = useState<Dayjs | null>(null);
     const navigate = useNavigate();
-    const [form] = Form.useForm();
 
     const fetchAirports = async (keyword: string, setOptions: React.Dispatch<React.SetStateAction<AirportOption[]>>) => {
         if (keyword.length > 2) {
@@ -36,13 +36,23 @@ const FlightSearch: React.FC = () => {
 
                 setOptions(airports);
             } catch (error) {
-                console.error("Error fetching airport data", error);
+                openNotification('error');
                 setOptions([]);
             }
         } else {
             setOptions([]);
         }
     }
+
+    const openNotification = (type: NotificationType) => {
+        api[type]({
+            message: 'Fetching error',
+            description:
+                'Could not fetch the data from the server: Contact your administrator',
+            showProgress: true,
+            pauseOnHover: true,
+        });
+    };
 
     const disabledDate = (current: Dayjs | null): boolean => {
         if (!current) return false;
@@ -59,16 +69,8 @@ const FlightSearch: React.FC = () => {
 
         if (date > arrivalDate) {
             setArrivalDate(null);
-            disabledArrivalDate(null);
         }
 
-
-    }
-
-    const disabledArrivalDate = (current: Dayjs | null): boolean => {
-        if (!current || !startDate) return false;
-
-        return current.toDate() < startDate.add(1, 'day').toDate();
     }
 
     const onFinish = (values: any) => {
@@ -81,13 +83,16 @@ const FlightSearch: React.FC = () => {
 
     return (
         <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+            {contextHolder}
             <Card title="Flight Search" style={{ width: "100%", maxWidth: 600 }}>
                 <Form
                     onFinish={onFinish}
                     labelCol={{ span: 8 }}
                     wrapperCol={{ span: 16 }}
                     layout='horizontal'>
-                    <Form.Item name="departureCode" label="Departure Airport">
+                    <Form.Item name="departureCode" label="Departure Airport"
+                        rules={[{ required: true, message: 'Please input your departure airport!' }]}
+                    >
                         <Select
                             showSearch
                             onSearch={(keyword) => fetchAirports(keyword, setOptions1)}
@@ -98,7 +103,9 @@ const FlightSearch: React.FC = () => {
                             ))}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="arrivalCode" label="Arrival Airport">
+                    <Form.Item name="arrivalCode" label="Arrival Airport"
+                        rules={[{ required: true, message: 'Please input your arrival airport!' }]}
+                    >
                         <Select
                             showSearch
                             onSearch={(keyword) => fetchAirports(keyword, setOptions2)}
@@ -109,7 +116,7 @@ const FlightSearch: React.FC = () => {
                             ))}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="departureDate" label="Departure Date">
+                    <Form.Item name="departureDate" label="Departure Date" rules={[{ required: true, message: 'Please input your departure date!' }]}>
                         <DatePicker
                             disabledDate={disabledDate}
                             onChange={(date) => onChangeDepartureDate(date)}
@@ -117,15 +124,15 @@ const FlightSearch: React.FC = () => {
                     </Form.Item>
                     <Form.Item name="returnDate" label="Return Date">
                         <DatePicker
-                            disabledDate={disabledArrivalDate}
                             onChange={(date) => setArrivalDate(date)}
                             value={arrivalDate}
+                            minDate={dayjs(startDate, 'YYYY-MM-DD')}
                         />
                     </Form.Item>
-                    <Form.Item name="numberOfAdults" label="Number of Adults">
-                        <InputNumber />
+                    <Form.Item name="numberOfAdults" label="Number of Adults" rules={[{ required: true, message: 'Please input the number of adults!' }]}>
+                        <InputNumber min={1} max={9} />
                     </Form.Item>
-                    <Form.Item name="currency" label="Currency">
+                    <Form.Item name="currency" label="Currency" rules={[{ required: true, message: 'Please input the currency you want the results to be shown!' }]}>
                         <Select>
                             <Select.Option value="USD">USD</Select.Option>
                             <Select.Option value="MXN">MXN</Select.Option>

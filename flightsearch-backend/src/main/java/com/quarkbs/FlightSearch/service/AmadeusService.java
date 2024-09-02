@@ -1,5 +1,8 @@
 package com.quarkbs.FlightSearch.service;
 
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -21,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.quarkbs.FlightSearch.entity.FlightsOffersDTO;
+import com.quarkbs.FlightSearch.entity.Itineraries;
 
 @Service
 public class AmadeusService {
@@ -40,13 +44,13 @@ public class AmadeusService {
     }
 
     public String authenticate() {
-        String url = baseUrl + "v1/security/oauth2/token";
+        String url = "https://test.api.amadeus.com/v1/security/oauth2/token";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("grant_type", "client_credentials");
-        body.add("client_id", apiKey);
-        body.add("client_secret", apiSecret);
+        body.set("grant_type", "client_credentials");
+        body.set("client_id", apiKey);
+        body.set("client_secret", apiSecret);
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(body, headers);
         ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
@@ -121,9 +125,31 @@ public class AmadeusService {
         return null;
     }
 
-    public List<FlightsOffersDTO> sortFlights(List<FlightsOffersDTO> flightOffers, String sortBy, String order) {
-        // To be implemented
+    public List<FlightsOffersDTO> sortFlights(List<FlightsOffersDTO> flightOffers, String sortBy, String orderBy) {
+        Comparator<FlightsOffersDTO> comparator;
+
+        switch (sortBy) {
+            case "price" -> comparator = Comparator.comparing(FlightsOffersDTO::getTotalPrice);
+            case "duration" -> comparator = Comparator.comparing(flightOffer -> flightOffer.getItineraries().stream()
+                    .map(Itineraries::getDurationAsObject).reduce(Duration.ZERO, Duration::plus));
+            case "duration_price" -> comparator = Comparator
+                    .comparing((FlightsOffersDTO flightOffer) -> flightOffer.getItineraries().stream()
+                            .map(Itineraries::getDurationAsObject).reduce(Duration.ZERO, Duration::plus))
+                    .thenComparing(FlightsOffersDTO::getTotalPrice);
+            default -> throw new IllegalArgumentException("Invalid sort option: " + sortBy);
+        }
+
+        Collections.sort(flightOffers, comparator);
+        if (orderBy.equals("desc")) {
+            flightOffers = flightOffers.reversed();
+        }
+
         return flightOffers;
+    }
+
+    public List<FlightsOffersDTO> pagination(List<FlightsOffersDTO> flightsOffers) {
+        // To be implemented
+        return flightsOffers;
     }
 
 }

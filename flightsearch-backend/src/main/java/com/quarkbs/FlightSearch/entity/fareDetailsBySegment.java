@@ -18,7 +18,7 @@ public class fareDetailsBySegment {
             @JsonProperty("segmentId") String segmentId,
             @JsonProperty("cabin") String cabin,
             @JsonProperty("class") String clase,
-            @JsonProperty("Amenities") List<Amenities> amenities) {
+            @JsonProperty("amenities") List<Amenities> amenities) {
         this.segmentId = segmentId;
         this.cabin = cabin;
         this.clase = clase;
