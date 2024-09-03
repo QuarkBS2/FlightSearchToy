@@ -30,6 +30,6 @@ And paste them using the following format:
 amadeus.api.key=YOUR_API_KEY
 amadeus.api.secret=YOUR_API_SECRET
 
-In any case you can't make use of Amadeus API, you can access to the demo data in the Postman mock server by changing the property amadeus.api.base.url:
+In any case you can't make use of Amadeus API because of server errors, you can access to the demo data in the Postman mock server by changing the property amadeus.api.base.url (Dosen't work for the Flight Search component, only for  Flight Results):
 amadeus.api.base.url=https://8b01c3f7-78b4-4746-b265-709ea899c5df.mock.pstmn.io/
-
+You still need to add your API_KEY and your API_SECRET.

@@ -159,11 +159,10 @@ public class AmadeusServiceTest {
         Map<String, String> mockResponse = new HashMap<>();
         mockResponse.put("access_token", mockedToken);
         ResponseEntity<Map> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
-        when(restTemplate.postForEntity(anyString(), any(), eq(Map.class))).thenReturn(responseEntity);
+        //when(restTemplate.postForEntity(anyString(), any(), eq(Map.class))).thenReturn(responseEntity);
 
         ResponseEntity<Map> resultEntity = new ResponseEntity<>(expectedBody, HttpStatus.OK);
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
-                .thenReturn(resultEntity);
+        //when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class))).thenReturn(resultEntity);
 
         //List<FlightsOffersDTO> responseOffersDTO = amadeusService.getFlights(departureAirportCode, arrivalAirportCode, departureDate, returnDate, numberAdults, currency, hasStops);
 
