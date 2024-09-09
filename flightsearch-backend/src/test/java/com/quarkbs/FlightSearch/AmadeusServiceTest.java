@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import com.quarkbs.FlightSearch.entity.FlightsOffersDTO;
 import com.quarkbs.FlightSearch.service.AmadeusService;
 
 @ExtendWith(MockitoExtension.class)
@@ -115,7 +116,7 @@ public class AmadeusServiceTest {
 
     @Test
     public void testGetFlights() {
-        //Yet to be finished. Fails at current state
+        // Yet to be finished.
         Map<String, Object> departure = new HashMap<>();
         departure.put("iataCode", "BOS");
         departure.put("terminal", "0");
@@ -129,7 +130,7 @@ public class AmadeusServiceTest {
         Map<String, Object> segment = new HashMap<>();
         segment.put("departure", departure);
         segment.put("arrival", arrival);
-        segment.put("carrierCode", "OD");
+        segment.put("carrierCode", "CDG");
         segment.put("number", "104");
         segment.put("aircraft", Map.of("code", "777"));
         segment.put("duration", "PT50H0M");
@@ -138,11 +139,40 @@ public class AmadeusServiceTest {
         itinerary.put("duration", "PT10H0M");
         itinerary.put("segments", List.of(segment));
 
+        Map<String, Object> fees = new HashMap<>();
+        fees.put("type", "SUPPLIER");
+        fees.put("amount", "0.00");
+
+        Map<String, Object> price = new HashMap<>();
+        price.put("currency", "MXN");
+        price.put("total", "10000.00");
+        price.put("basae", "9000.00");
+        price.put("fees", List.of(fees));
+
+        Map<String, Object> amenities = new HashMap<>();
+        amenities.put("description", "WIFI");
+        amenities.put("isChargeable", false);
+
+        Map<String, Object> fareDetailsBySegment = new HashMap<>();
+        fareDetailsBySegment.put("segmentId", "1");
+        fareDetailsBySegment.put("cabin", "ECONOMY");
+        fareDetailsBySegment.put("amenities", List.of(amenities));
+
+        Map<String, Object> travelerPricings = new HashMap<>();
+        travelerPricings.put("travelerId", "1");
+        travelerPricings.put("price", price);
+        travelerPricings.put("fareDetailsBySegment", List.of(fareDetailsBySegment));
+
+        Map<String, Object> dictionaries = new HashMap<>();
+
         Map<String, Object> flightOffer = new HashMap<>();
         flightOffer.put("id", "1");
         flightOffer.put("source", "BOS");
         flightOffer.put("type", "flight-offer");
-        flightOffer.put("itineraries", itinerary);
+        flightOffer.put("itineraries", List.of(itinerary));
+        flightOffer.put("price", price);
+        flightOffer.put("travelerPricings", List.of(travelerPricings));
+        flightOffer.put("dictionaries", dictionaries);
 
         Map<String, Object> expectedBody = new HashMap<>();
         expectedBody.put("data", List.of(flightOffer));
@@ -159,12 +189,16 @@ public class AmadeusServiceTest {
         Map<String, String> mockResponse = new HashMap<>();
         mockResponse.put("access_token", mockedToken);
         ResponseEntity<Map> responseEntity = new ResponseEntity<>(mockResponse, HttpStatus.OK);
-        //when(restTemplate.postForEntity(anyString(), any(), eq(Map.class))).thenReturn(responseEntity);
+        when(restTemplate.postForEntity(anyString(), any(), eq(Map.class))).thenReturn(responseEntity);
 
         ResponseEntity<Map> resultEntity = new ResponseEntity<>(expectedBody, HttpStatus.OK);
-        //when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class))).thenReturn(resultEntity);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
+                .thenReturn(resultEntity);
 
-        //List<FlightsOffersDTO> responseOffersDTO = amadeusService.getFlights(departureAirportCode, arrivalAirportCode, departureDate, returnDate, numberAdults, currency, hasStops);
+        List<FlightsOffersDTO> responseOffersDTO = amadeusService.getFlights(departureAirportCode, arrivalAirportCode,
+                departureDate, returnDate, numberAdults, currency, hasStops);
+
+        assertEquals("1", responseOffersDTO.get(0).getId());
 
     }
 

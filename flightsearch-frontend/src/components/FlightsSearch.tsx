@@ -19,8 +19,19 @@ const FlightSearch: React.FC = () => {
     const [options2, setOptions2] = useState<AirportOption[]>([]);
     const [api, contextHolder] = notification.useNotification();
     const [startDate, setStartDate] = useState<Dayjs | null>(null);
-    const [arrivalDate, setArrivalDate] = useState<Dayjs | null>(null);
+    const [returnDate, setReturnDate] = useState<Dayjs | null>(null);
+    const [isDisabled, setIsDisabled] = useState(true);
     const navigate = useNavigate();
+    const [form] = Form.useForm();
+
+    React.useEffect(() => {
+        if (startDate === null) {
+            form.setFieldsValue({ returnDate: null })
+        }
+        else if (returnDate !== null) {
+            startDate > returnDate ? form.setFieldsValue({ returnDate: null }) : setReturnDate(returnDate);
+        }
+    }, [startDate, returnDate])
 
     const fetchAirports = async (keyword: string, setOptions: React.Dispatch<React.SetStateAction<AirportOption[]>>) => {
         if (keyword.length > 2) {
@@ -63,19 +74,28 @@ const FlightSearch: React.FC = () => {
         return current.toDate() < today;
     }
 
-    const onChangeDepartureDate = (date: React.SetStateAction<Dayjs | null>) => {
-        setStartDate(date)
-        if (!date || !arrivalDate) return false;
-
-        if (date > arrivalDate) {
-            setArrivalDate(null);
+    const disabledReturnDate = (current: Dayjs): boolean => {
+        if (!startDate) {
+            return false;
         }
 
+        return current && current < startDate.endOf('day');
+    }
+
+    const onChangeDepartureDate = (date: Dayjs | null) => {
+        setStartDate(date);
+        date === null ? setIsDisabled(true) : setIsDisabled(false);
+        if (!date || !returnDate) return false;
+
+    }
+
+    const onChangeReturnDate = (date: React.SetStateAction<Dayjs | null>) => {
+        setReturnDate(date);
     }
 
     const onFinish = (values: any) => {
         values.departureDate = dayjs(values.departureDate).format('YYYY-MM-DD')
-        values.returnDate = dayjs(values.returnDate).format('YYYY-MM-DD')
+        values.returnDate ? values.returnDate = dayjs(values.returnDate).format('YYYY-MM-DD') : values.returnDate = null;
         navigate('/FlightResults', {
             state: values
         });
@@ -89,7 +109,8 @@ const FlightSearch: React.FC = () => {
                     onFinish={onFinish}
                     labelCol={{ span: 8 }}
                     wrapperCol={{ span: 16 }}
-                    layout='horizontal'>
+                    layout='horizontal'
+                    form={form}>
                     <Form.Item name="departureCode" label="Departure Airport"
                         rules={[{ required: true, message: 'Please input your departure airport!' }]}
                     >
@@ -118,15 +139,17 @@ const FlightSearch: React.FC = () => {
                     </Form.Item>
                     <Form.Item name="departureDate" label="Departure Date" rules={[{ required: true, message: 'Please input your departure date!' }]}>
                         <DatePicker
+                            value={startDate}
                             disabledDate={disabledDate}
                             onChange={(date) => onChangeDepartureDate(date)}
                         />
                     </Form.Item>
                     <Form.Item name="returnDate" label="Return Date">
                         <DatePicker
-                            onChange={(date) => setArrivalDate(date)}
-                            value={arrivalDate}
-                            minDate={dayjs(startDate, 'YYYY-MM-DD')}
+                            disabled={isDisabled}
+                            disabledDate={disabledReturnDate}
+                            onChange={(date) => onChangeReturnDate(date)}
+                            value={returnDate}
                         />
                     </Form.Item>
                     <Form.Item name="numberOfAdults" label="Number of Adults" rules={[{ required: true, message: 'Please input the number of adults!' }]}>
