@@ -1,4 +1,4 @@
-import { Flex, Spin, notification, Button, Form, Checkbox, Select, Descriptions, List, Card, Drawer, Row, Col, Typography } from "antd"
+import { Flex, Spin, notification, Button, Form, Pagination, Checkbox, Select, Descriptions, List, Card, Drawer, Row, Col, Typography } from "antd"
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
@@ -70,13 +70,16 @@ interface FlightData {
 const FlightResults: React.FC = () => {
 
   const [data, setData] = useState<FlightData[]>([]);
+  const [totalSize, setTotalSize] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
   const formParams = location.state;
   const [api, contextHolder] = notification.useNotification();
   const [loading, setLoading] = useState(true);
+  const [fetchLoading, setFetchLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<FlightData>();
+  const [isPaginationDisabled, setIsPaginationDisabled] = useState(false);
 
   const openNotification = (type: NotificationType) => {
     api[type]({
@@ -124,6 +127,9 @@ const FlightResults: React.FC = () => {
   const fetchFlightResults = async () => {
     try {
       const params = new URLSearchParams();
+      if (formParams.page !== undefined) {
+        params.append('page', formParams.page);
+      }
       if (formParams.sortBy !== undefined) {
         params.append('sortBy', formParams.sortBy);
       }
@@ -139,8 +145,8 @@ const FlightResults: React.FC = () => {
       if (formParams.departureDate) {
         params.append('departureDate', formParams.departureDate)
       }
-      if (formParams.arrivalDate) {
-        params.append('arrivalDate', formParams.arrivalDate)
+      if (formParams.returnDate) {
+        params.append('returnDate', formParams.returnDate)
       }
       if (formParams.numberOfAdults) {
         params.append('numberAdults', formParams.numberOfAdults)
@@ -152,13 +158,16 @@ const FlightResults: React.FC = () => {
 
       try {
         const response = await axios.get(`http://localhost:8080/api/amadeus/flightsoffers?${params.toString()}`);
-        setData(response.data);
+        setData(response.data.data);
+        setTotalSize(response.data.totalSize)
       } catch (error) {
-        console.log("Couldn't fetch the data");
         openNotification('error');
         setData([])
+        setTotalSize(0);
       } finally {
         setLoading(false);
+        setIsPaginationDisabled(false);
+        setFetchLoading(false);
       }
     } catch (error) {
       if (formParams === null) {
@@ -199,13 +208,19 @@ const FlightResults: React.FC = () => {
     fetchFlightResults();
   };
 
+  const onChangePage = (current: number) => {
+    formParams.page = current;
+    setIsPaginationDisabled(true);
+    setFetchLoading(true);
+    fetchFlightResults();
+  }
+
   return (
-    console.log(data),
     <>
       {contextHolder}
       <Row>
         <Col span={12}>
-          <Button onClick={() => { navigate('/') }} icon={<ArrowLeftOutlined />} style={{ margin: 12 }}>Return to search</Button>
+          <Button type="primary" onClick={() => { navigate('/') }} icon={<ArrowLeftOutlined />} style={{ margin: 12 }}>Return to search</Button>
         </Col>
         <Col span={12}>
           <Form layout="inline" style={{ margin: 12 }} onFinish={onFinish}>
@@ -227,46 +242,49 @@ const FlightResults: React.FC = () => {
           </Form>
         </Col>
       </Row>
-      <List
-        style={{ background: '#f8f8f8' }}
-        dataSource={data}
-        renderItem={(flight) => (
-          <List.Item >
-            <Card
-              title={`Flight offer ${flight.id}`}
-              style={{ width: 1600, marginLeft: 35 }}
-              actions={[
-                <a onClick={() => showDrawer(flight)} key={`a-${flight}`}>
-                  More details
-                </a>
-              ]}>
-              {flight.itineraries.map((itinerary, itineraryIndex) =>
-                <div key={itineraryIndex}>
-                  <Card style={{ marginBottom: 16 }}>
-                    <Descriptions title={`${itineraryIndex === 0 ? "Go" : "Returing"} flight `} bordered={true}>
-                      <Descriptions.Item label="Flight trayectory">{`${itinerary.segments[0].departure.iataCode} --> ${itinerary.segments[itinerary.segments.length - 1].arrival.iataCode}`}</Descriptions.Item>
-                      <Descriptions.Item label="Time">{`${dateFormat(itinerary.segments[0].departure.at)} - ${dateFormat(itinerary.segments[itinerary.segments.length - 1].arrival.at)}`}</Descriptions.Item>
-                      <Descriptions.Item label="Total duration">{timeFormat(itinerary.duration)}</Descriptions.Item>
-                      <Descriptions.Item label="Total Price">{flight.price.total} {flight.price.currency}</Descriptions.Item>
-                      <Descriptions.Item label="Price by traveler">{flight.travelerPricings[0].price.total} {flight.price.currency}</Descriptions.Item>
-                    </Descriptions>
-                    {itinerary.segments.map((segments, segmentsIndex) =>
-                      <div key={segmentsIndex} style={{marginTop: 12}}>
-                        <Descriptions title={`Segement ${segmentsIndex + 1}`} bordered={true}>
-                          <Descriptions.Item label="Duration">{timeFormat(segments.duration)}</Descriptions.Item>
-                          <Descriptions.Item label="Carrier Code">{`${segments.carrierCode}`}</Descriptions.Item>
-                          <Descriptions.Item label="Departure Airport">{segments.departure.iataCode}</Descriptions.Item>
-                          <Descriptions.Item label="Arrival Airport">{segments.arrival.iataCode}</Descriptions.Item>
-                        </Descriptions>
-                      </div>
-                    )}
-                  </Card>
-                </div>
-              )}
-            </Card>
-          </List.Item>
-        )}
-      />
+      <Pagination size="small" align="center" defaultCurrent={1} total={totalSize} showSizeChanger={false} onChange={(current) => onChangePage(current)} showTotal={(total) => `Total ${total} items`} disabled={isPaginationDisabled} />
+      <Spin tip="Loading..." spinning={fetchLoading} delay={500}>
+        <List
+          style={{ background: '#f8f8f8' }}
+          dataSource={data}
+          renderItem={(flight) => (
+            <List.Item >
+              <Card
+                title={`Flight offer ${flight.id}`}
+                style={{ width: 1600, marginLeft: 35 }}
+                actions={[
+                  <a onClick={() => showDrawer(flight)} key={`a-${flight}`}>
+                    More details
+                  </a>
+                ]}>
+                {flight.itineraries.map((itinerary, itineraryIndex) =>
+                  <div key={itineraryIndex}>
+                    <Card style={{ marginBottom: 16 }}>
+                      <Descriptions title={`${itineraryIndex === 0 ? "Go" : "Returing"} flight `} bordered={true}>
+                        <Descriptions.Item label="Flight trayectory">{`${itinerary.segments[0].departure.iataCode} --> ${itinerary.segments[itinerary.segments.length - 1].arrival.iataCode}`}</Descriptions.Item>
+                        <Descriptions.Item label="Time">{`${dateFormat(itinerary.segments[0].departure.at)} - ${dateFormat(itinerary.segments[itinerary.segments.length - 1].arrival.at)}`}</Descriptions.Item>
+                        <Descriptions.Item label="Total duration">{timeFormat(itinerary.duration)}</Descriptions.Item>
+                        <Descriptions.Item label="Total Price">{flight.price.total} {flight.price.currency}</Descriptions.Item>
+                        <Descriptions.Item label="Price by traveler">{flight.travelerPricings[0].price.total} {flight.price.currency}</Descriptions.Item>
+                      </Descriptions>
+                      {itinerary.segments.map((segments, segmentsIndex) =>
+                        <div key={segmentsIndex} style={{ marginTop: 12 }}>
+                          <Descriptions title={`Segement ${segmentsIndex + 1}`} bordered={true}>
+                            <Descriptions.Item label="Duration">{timeFormat(segments.duration)}</Descriptions.Item>
+                            <Descriptions.Item label="Carrier Code">{`${segments.carrierCode}`}</Descriptions.Item>
+                            <Descriptions.Item label="Departure Airport">{segments.departure.iataCode}</Descriptions.Item>
+                            <Descriptions.Item label="Arrival Airport">{segments.arrival.iataCode}</Descriptions.Item>
+                          </Descriptions>
+                        </div>
+                      )}
+                    </Card>
+                  </div>
+                )}
+              </Card>
+            </List.Item>
+          )}
+        />
+      </Spin>
 
       <Drawer width={1650} placement="right" closable={true} onClose={onClose} open={open} destroyOnClose style={{ background: '#f8f8f8' }}>
         {selectedItem?.itineraries.map((itinerary, itineraryIndex) =>

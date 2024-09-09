@@ -3,6 +3,7 @@ package com.quarkbs.FlightSearch.service;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -147,9 +148,19 @@ public class AmadeusService {
         return flightOffers;
     }
 
-    public List<FlightsOffersDTO> pagination(List<FlightsOffersDTO> flightsOffers) {
-        // To be implemented
-        return flightsOffers;
+    public Map<String, Object> pagination(List<FlightsOffersDTO> flightsOffers, int page) {
+        int size = 10;
+        int flightSize = flightsOffers.size();
+        int start = (page - 1) * size;
+        int end = Math.min(start + size, flightSize);
+
+        flightsOffers = flightsOffers.subList(start, end);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", flightsOffers);
+        result.put("totalSize", flightSize);
+
+        return result;
     }
 
 }

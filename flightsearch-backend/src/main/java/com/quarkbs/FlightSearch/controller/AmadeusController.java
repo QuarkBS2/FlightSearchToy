@@ -1,6 +1,7 @@
 package com.quarkbs.FlightSearch.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -32,7 +33,7 @@ public class AmadeusController {
     }
 
     @GetMapping("/flightsoffers")
-    public ResponseEntity<List<FlightsOffersDTO>> getFlightsOffers(
+    public ResponseEntity<Map<String, Object>> getFlightsOffers(
             @RequestParam String departureAirportCode,
             @RequestParam String arrivalAirportCode,
             @RequestParam String departureDate,
@@ -41,15 +42,16 @@ public class AmadeusController {
             @RequestParam String currency,
             @RequestParam Boolean hasStops,
             @RequestParam(required = false) String sortBy,
-            @RequestParam(required = false, defaultValue = "asc") String orderBy) {
+            @RequestParam(required = false, defaultValue = "asc") String orderBy,
+            @RequestParam(defaultValue = "1") int page) {
         List<FlightsOffersDTO> response = amadeusService.getFlights(departureAirportCode, arrivalAirportCode,
                 departureDate, returnDate, numberAdults, currency, hasStops);
         if (sortBy != null && !sortBy.equals("undefined")) {
             response = amadeusService.sortFlights(response, sortBy, orderBy);
         }
-        response = amadeusService.pagination(response);
+        Map<String, Object> paginatedResult = amadeusService.pagination(response, page);
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(paginatedResult);
     }
 
 }
